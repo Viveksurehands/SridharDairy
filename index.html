@@ -233,7 +233,10 @@
     </div>
 
     <!-- Order Form Section -->
-    <div class="form-section">
+<div class="form-section">
+        <label for="name">Your Name</label>
+        <input type="text" id="name" placeholder="Enter your full name" required>
+
         <label for="phone">Your Mobile Number</label>
         <input type="tel" id="phone" placeholder="Enter 10-digit phone number" required>
 
@@ -247,13 +250,11 @@
 </div>
 
 <script>
-    // Makes the entire product row clickable to make it easier for users
     function toggleCheckbox(card) {
         const checkbox = card.querySelector('input[type="checkbox"]');
         checkbox.checked = !checkbox.checked;
     }
 
-    // --- LOCATION LOGIC ---
     function getLocation() {
         const locationInput = document.getElementById("manualLocation");
         const originalPlaceholder = locationInput.placeholder;
@@ -278,19 +279,28 @@
         }
     }
 
-    // --- SUBMIT LOGIC ---
     function submitOrder() {
-        const phone = document.getElementById("phone").value;
+        const name = document.getElementById("name").value;
+        const phone = document.getElementById("phone").value.trim();
         const location = document.getElementById("manualLocation").value;
         
         const checkboxes = document.querySelectorAll('input[name="product"]:checked');
         let selectedProducts = [];
         checkboxes.forEach((cb) => { selectedProducts.push(cb.value); });
 
-        if (!phone || phone.trim() === "") {
-            alert("Please enter your phone number.");
+        // 1. Validation for Name
+        if (!name || name.trim() === "") {
+            alert("Please enter your name.");
             return;
         }
+
+        // 2. Strict 10-Digit Phone Validation (Checks if it's exactly 10 numbers)
+        const phoneRegex = /^[0-9]{10}$/;
+        if (!phoneRegex.test(phone)) {
+            alert("Please enter a valid 10-digit mobile number (numbers only, no spaces or symbols).");
+            return;
+        }
+
         if (selectedProducts.length === 0) {
             alert("Please select at least one item to order.");
             return;
@@ -304,36 +314,39 @@
         statusMsg.style.color = "#2563eb";
         statusMsg.innerText = "Sending order details...";
 
+        // Added name to the data packet sent to Google
         const orderData = {
+            name: name,
             phone: phone,
             location: location,
             products: selectedProducts.join(", "),
             timestamp: new Date().toLocaleString()
         };
 
-// 1. Put your URL inside quotes and assign it to a variable
-        const googleScriptURL = "https://script.google.com/macros/s/AKfycbwD5_zaqS3xcuB7jTnqJNltjxOuAv40FSKkI8hVJGAfPlJOtPMcy-SFXPjlqdB45nI/exec"; 
+        // --- IMPORTANT: Paste your active Web App URL here ---
+        const googleScriptURL = "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE"; 
 
-        // 2. Send the data to your Google Sheet using fetch
         fetch(googleScriptURL, {
             method: 'POST',
+            mode: 'no-cors',
             body: JSON.stringify(orderData)
         })
         .then(response => {
             statusMsg.style.color = "#16a34a";
             statusMsg.innerText = "✅ Order Placed Successfully! We will contact you soon.";
             
-            // Reset the form after success
+            // Clear inputs including name after success
+            document.getElementById("name").value = '';
             document.getElementById("phone").value = '';
             document.getElementById("manualLocation").value = '';
-            document.querySelectorAll('input[name="product"]').forEach((cb) => cb.checked = false);
+            checkboxes.forEach((cb) => cb.checked = false);
         })
         .catch(error => {
             console.error("Error:", error);
             statusMsg.style.color = "red";
-statusMsg.innerText = "Error placing order. Please check your internet and try again.";
-    });
-} // <--- ADD THIS BRACE HERE TO CLOSE THE FUNCTION
+            statusMsg.innerText = "Error placing order. Please check your internet and try again.";
+        });
+    }
 </script>
 
 </body>
